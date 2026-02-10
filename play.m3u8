@@ -1,0 +1,17 @@
+#EXTM3U
+#EXTINF:-1,
+./1/playlist_1.m3u8
+#EXTINF:-1,
+./2/playlist_2.m3u8
+#EXTINF:-1,
+./3/playlist_3.m3u8
+#EXTINF:-1,
+./4/playlist_4.m3u8
+#EXTINF:-1,
+./5/playlist_5.m3u8
+#EXTINF:-1,
+./6/playlist_6.m3u8
+#EXTINF:-1,
+./7/playlist_7.m3u8
+#EXTINF:-1,
+./8/playlist_8.m3u8
