@@ -41,7 +41,7 @@ jobs:
             {"m3u8":"../7/playlist_7.m3u8","dur":$(ffprobe -v error -show_format ../7/playlist_7.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
             {"m3u8":"../8/playlist_8.m3u8","dur":$(ffprobe -v error -show_format ../8/playlist_8.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)}
           ]
-EOF
+ EOF
 
           TOTAL=$(jq -r 'map(.dur)|add' programs.json)
           POS=$((NOW % TOTAL))
