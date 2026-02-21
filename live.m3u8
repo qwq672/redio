@@ -1,0 +1,10 @@
+[
+  {"dur": 3600, "m3u8": "1/playlist_1.m3u8"},
+  {"dur": 3600, "m3u8": "2/playlist_2.m3u8"},
+  {"dur": 3600, "m3u8": "3/playlist_3.m3u8"},
+  {"dur": 3600, "m3u8": "4/playlist_4.m3u8"},
+  {"dur": 3600, "m3u8": "5/playlist_5.m3u8"},
+  {"dur": 3600, "m3u8": "6/playlist_6.m3u8"},
+  {"dur": 3600, "m3u8": "7/playlist_7.m3u8"},
+  {"dur": 3600, "m3u8": "8/playlist_8.m3u8"}
+]
