@@ -1,0 +1,96 @@
+name: SafeRadio
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+  workflow_dispatch:
+  push:
+
+jobs:
+  radio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt update && sudo apt install -y ffprobe jq
+
+      - name: Build live.m3u8
+        run: |
+          mkdir -p live
+          cd live
+
+          SEG=10
+          MAX_ERR=2
+          BEEP="../audio/beep.mp3"
+          PROGS=8
+
+          NOW=$(date +%s)
+          M=$(date +%M)
+          S=$(date +%S)
+          IS_HH=0
+          [ "$M" -eq 0 ] && [ "$S" -le "$MAX_ERR" ] && IS_HH=1
+
+          cat > programs.json << EOF
+          [
+            {"m3u8":"../1/playlist_1.m3u8","dur":$(ffprobe -v error -show_format ../1/playlist_1.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../2/playlist_2.m3u8","dur":$(ffprobe -v error -show_format ../2/playlist_2.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../3/playlist_3.m3u8","dur":$(ffprobe -v error -show_format ../3/playlist_3.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../4/playlist_4.m3u8","dur":$(ffprobe -v error -show_format ../4/playlist_4.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../5/playlist_5.m3u8","dur":$(ffprobe -v error -show_format ../5/playlist_5.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../6/playlist_6.m3u8","dur":$(ffprobe -v error -show_format ../6/playlist_6.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../7/playlist_7.m3u8","dur":$(ffprobe -v error -show_format ../7/playlist_7.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)},
+            {"m3u8":"../8/playlist_8.m3u8","dur":$(ffprobe -v error -show_format ../8/playlist_8.m3u8 | grep duration | cut -d= -f2 | cut -d. -f1)}
+          ]
+EOF
+
+          TOTAL=$(jq -r 'map(.dur)|add' programs.json)
+          POS=$((NOW % TOTAL))
+
+          sum=0
+          now_m3u8=""
+          now_pos=0
+          at_end=0
+
+          for ((i=0;i<PROGS;i++)); do
+            dur=$(jq -r ".[$i].dur" programs.json)
+            m3u8=$(jq -r ".[$i].m3u8" programs.json)
+            if [ $POS -lt $((sum+dur)) ]; then
+              now_m3u8="$m3u8"
+              now_pos=$((POS-sum))
+              [ $now_pos -ge $((dur-1)) ] && at_end=1
+              break
+            fi
+            sum=$((sum+dur))
+          done
+
+          if [ $IS_HH -eq 1 ] && [ $at_end -eq 1 ]; then
+            cat > live.m3u8 << EOF
+#EXTM3U
+#EXT-X-TARGETDURATION:10
+#EXT-X-VERSION:3
+#EXT-X-ALLOW-CACHE:NO
+#EXTINF:5.0,
+../audio/beep.mp3
+#EXT-X-ENDLIST
+EOF
+          else
+            idx=$((now_pos / SEG))
+            ts=$(grep -A1 EXTINF "$now_m3u8" | grep -v EXTINF | sed -n "$((idx+1))p")
+            cat > live.m3u8 << EOF
+#EXTM3U
+#EXT-X-TARGETDURATION:$SEG
+#EXT-X-VERSION:3
+#EXT-X-ALLOW-CACHE:NO
+#EXTINF:$SEG.0,
+$ts
+#EXT-X-ENDLIST
+EOF
+          fi
+
+      - name: Update
+        run: |
+          git config --global user.name "radio"
+          git config --global user.email "radio@example.com"
+          git add live/live.m3u8
+          git commit -m "sync" || exit 0
+          git push
