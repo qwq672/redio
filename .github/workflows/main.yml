@@ -42,10 +42,9 @@ jobs:
 #EXT-X-VERSION:3
 #EXT-X-ALLOW-CACHE:NO
 #EXTINF:$SEG.0,TS_LINE
-#EXT-X-ENDLIST
-EOF
+#EXT-X-ENDLIST EOF
 
-- name: Commit and push
+      - name: Commit and push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
