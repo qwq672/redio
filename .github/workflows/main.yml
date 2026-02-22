@@ -1,50 +1,76 @@
-name: 纯电台半动态播放列表
+name: 纯电台播放列表生成（适配GitHub Pages）
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
+  schedule:
+    - cron: '0 * * * *'  # 每小时自动更新（可选）
 
 jobs:
-  build_playlist:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 读取项目文件
+      # 步骤1：检出仓库代码（带完整Git历史，方便提交）
+      - name: Checkout 仓库
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 必须：获取完整Git历史，否则无法提交
+          token: ${{ secrets.GITHUB_TOKEN }}  # GitHub内置令牌，用于提交
 
-      - name: 生成干净电台播放列表.m3u8
+      # 步骤2：生成纯电台播放列表（无广告、按规则）
+      - name: 生成 playlist.m3u8
         run: |
           python3 << 'EOF'
           import json
           import random
 
-          # 读取你本来就有的节目文件
-          with open("programs.json", "r", encoding="utf-8") as f:
-              programs = json.load(f)
+          # 读取你已有的 programs.json
+          try:
+              with open("programs.json", "r", encoding="utf-8") as f:
+                  programs = json.load(f)
+          except FileNotFoundError:
+              print("❌ 未找到 programs.json，请确认文件在仓库根目录")
+              exit(1)
 
-          # 给每个节目加ID
+          # 给节目加ID，按规则生成播放列表
           for i, p in enumerate(programs):
               p["id"] = i + 1
 
-          # 生成播放序列（核心规则：相邻不重复，隔一个才能重复）
-          play_times = 20  # 想播多少个就改这里
+          play_times = 20  # 可自定义播放次数
           last_id = None
           playlist = ["#EXTM3U"]
 
           for _ in range(play_times):
-              # 只排除上一个，满足：相邻不重复 = 至少隔1个
               available = [p for p in programs if p["id"] != last_id]
               pick = random.choice(available)
               playlist.append(f"#EXTINF:{pick['dur']},电台{pick['id']}")
               playlist.append(pick["m3u8"])
               last_id = pick["id"]
 
-          # 直接输出到 playlist.m3u8（不删你任何文件，只新增这个）
+          # 写入播放列表（保存到仓库根目录）
           with open("playlist.m3u8", "w", encoding="utf-8") as f:
               f.write("\n".join(playlist))
 
-          print("✅ 生成完成：playlist.m3u8")
+          print("✅ playlist.m3u8 生成完成")
           EOF
 
-      - name: 保存最终播放列表
-        uses: actions/upload-artifact@v4
+      # 步骤3：提交生成的文件到仓库（关键！解决Pages访问问题）
+      - name: 提交 playlist.m3u8 到仓库
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          # 检查文件是否有变化
+          if git status --porcelain | grep -q "playlist.m3u8"; then
+              git add playlist.m3u8
+              git commit -m "Auto update radio playlist $(date +'%Y-%m-%d %H:%M:%S')"
+              git push origin main  # 注意：如果你的主分支是master，改成master
+              echo "✅ playlist.m3u8 已提交到仓库"
+          else
+              echo "ℹ️ playlist.m3u8 无变化，无需提交"
+          fi
+
+      # 步骤4：（可选）部署到GitHub Pages（如果需要直接通过Pages访问）
+      - name: 部署到 GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          name: playlist
-          path: playlist.m3u8
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./  # 发布根目录的文件（包含playlist.m3u8）
+          publish_branch: gh-pages  # Pages默认分支
