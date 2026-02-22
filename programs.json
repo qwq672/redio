@@ -1,10 +1,42 @@
 [
-  {"dur": 3600, "m3u8": "1/playlist_1.m3u8"},
-  {"dur": 3600, "m3u8": "2/playlist_2.m3u8"},
-  {"dur": 3600, "m3u8": "3/playlist_3.m3u8"},
-  {"dur": 3600, "m3u8": "4/playlist_4.m3u8"},
-  {"dur": 3600, "m3u8": "5/playlist_5.m3u8"},
-  {"dur": 3600, "m3u8": "6/playlist_6.m3u8"},
-  {"dur": 3600, "m3u8": "7/playlist_7.m3u8"},
-  {"dur": 3600, "m3u8": "8/playlist_8.m3u8"}
+  {
+    "dur": 4815,
+    "m3u8": "1/playlist_1.m3u8",
+    "duration": "01:20:15"
+  },
+  {
+    "dur": 6203,
+    "m3u8": "2/playlist_2.m3u8",
+    "duration": "01:43:23"
+  },
+  {
+    "dur": 5820,
+    "m3u8": "3/playlist_3.m3u8",
+    "duration": "01:37:00"
+  },
+  {
+    "dur": 9254,
+    "m3u8": "4/playlist_4.m3u8",
+    "duration": "02:34:14"
+  },
+  {
+    "dur": 6476,
+    "m3u8": "5/playlist_5.m3u8",
+    "duration": "01:47:56"
+  },
+  {
+    "dur": 7251,
+    "m3u8": "6/playlist_6.m3u8",
+    "duration": "02:00:51"
+  },
+  {
+    "dur": 6483,
+    "m3u8": "7/playlist_7.m3u8",
+    "duration": "01:48:03"
+  },
+  {
+    "dur": 5925,
+    "m3u8": "8/playlist_8.m3u8",
+    "duration": "01:38:45"
+  }
 ]
