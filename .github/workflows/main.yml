@@ -1,54 +1,50 @@
-name: Update Radio
-
+name: 纯电台半动态播放列表
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
-  build:
+  build_playlist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: 读取项目文件
+        uses: actions/checkout@v4
+
+      - name: 生成干净电台播放列表.m3u8
+        run: |
+          python3 << 'EOF'
+          import json
+          import random
+
+          # 读取你本来就有的节目文件
+          with open("programs.json", "r", encoding="utf-8") as f:
+              programs = json.load(f)
+
+          # 给每个节目加ID
+          for i, p in enumerate(programs):
+              p["id"] = i + 1
+
+          # 生成播放序列（核心规则：相邻不重复，隔一个才能重复）
+          play_times = 20  # 想播多少个就改这里
+          last_id = None
+          playlist = ["#EXTM3U"]
+
+          for _ in range(play_times):
+              # 只排除上一个，满足：相邻不重复 = 至少隔1个
+              available = [p for p in programs if p["id"] != last_id]
+              pick = random.choice(available)
+              playlist.append(f"#EXTINF:{pick['dur']},电台{pick['id']}")
+              playlist.append(pick["m3u8"])
+              last_id = pick["id"]
+
+          # 直接输出到 playlist.m3u8（不删你任何文件，只新增这个）
+          with open("playlist.m3u8", "w", encoding="utf-8") as f:
+              f.write("\n".join(playlist))
+
+          print("✅ 生成完成：playlist.m3u8")
+          EOF
+
+      - name: 保存最终播放列表
+        uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-
-      - name: Update live.m3u8
-        run: |
-          NOW=$(date +%s)
-          TOTAL=28800
-          POS=$((NOW % TOTAL))
-          SEG=10
-          ITEM_PER_PROG=$((TOTAL / 8))
-
-          i=$((POS / ITEM_PER_PROG))
-          CHANNEL=$((i + 1))
-          OFFSET=$((POS % ITEM_PER_PROG))
-          INDEX=$((OFFSET / SEG))
-
-          PLAYLIST="${CHANNEL}/playlist_${CHANNEL}.m3u8"
-
-          TS_LINE=$(sed -n "/^#EXTINF/!p" "$PLAYLIST" | sed -n "$((INDEX + 1))p")
-          
-          cat > live.m3u8 <<EOF
-#EXTM3U
-#EXT-X-TARGETDURATION:$SEG
-#EXT-X-VERSION:3
-#EXT-X-ALLOW-CACHE:NO
-#EXTINF:$SEG.0,$TS_LINE
-#EXT-X-ENDLIST
-          #EOF
-
-      - name: Commit and push
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add live.m3u8
-          git commit -m "Update live stream" || exit 0
-          git push
+          name: playlist
+          path: playlist.m3u8
